@@ -8,7 +8,7 @@ data Stream a = Stream a (Stream a)
 
 -- | Show instance for Stream, showing the first 10 elements
 instance Show a => Show (Stream a) where
-  show s = "[" ++ unwords (map show (take 10 (toList s))) ++ "]"
+  show s = "[" ++ unwords (map show (take' 10 s)) ++ "]"
 
 instance Functor Stream where
   fmap f (Stream x xs) = Stream (f x) (fmap f xs)
@@ -81,18 +81,15 @@ filterStream p (Stream x xs)
 -- [2,3,5,7,11,13,17,19,23,29]
 --
 primes :: Stream Integer
-primes = Stream 2 (filterStream isPrime (Stream 3 (unfold (\n -> (n, n + 2)) 5)))
+primes = sieveStream (fromList 0 [2..])
   where
-    isPrime n = all (\p -> n `mod` p /= 0) (takeWhile (\p -> p * p <= n) (toList primes))
+    sieveStream s = let (p, rest) = sieve s
+                    in Stream p (sieveStream rest)
 
 -- | Helper function to take elements from Stream
 take' :: Int -> Stream a -> [a]
 take' 0 _ = []
 take' n (Stream x xs) = x : take' (n-1) xs
-
--- | Helper function to convert Stream to list
-toList :: Stream a -> [a]
-toList (Stream x xs) = x : toList xs
 
 -- | One step of Sieve of Eratosthenes
 -- (to be used with 'unfoldr')

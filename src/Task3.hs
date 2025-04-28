@@ -5,7 +5,7 @@ module Task3 where
 
 import Task2 (Stream(..))
 import qualified Task2 as T2
-import Data.Ratio (Ratio, numerator, denominator)
+import Data.Ratio (Ratio, numerator)
 
 -- | Power series represented as infinite stream of coefficients
 -- 
@@ -69,31 +69,18 @@ zeros :: Num a => Stream a
 zeros = T2.unfold (\_ -> (0, ())) ()
 
 instance Num a => Num (Series a) where
-  -- fromInteger n = n + 0x + 0x^2 + ...
   fromInteger n = Series $ Stream (fromInteger n) zeros
-  
-  -- Negate all coefficients
   negate (Series s) = Series $ fmap negate s
-  
-  -- Add corresponding coefficients
   Series s1 + Series s2 = Series $ T2.unfold combine (s1, s2)
     where combine (Stream a as, Stream b bs) = (a + b, (as, bs))
-  
-  -- Multiply series
-  -- If A = a₀ + xA' and B = b₀ + xB', then AB = a₀b₀ + x(a₀B' + A'B)
-  Series (Stream a0 a') * Series (Stream b0 b') = 
+  Series (Stream a0 a') * Series (Stream b0 b') =
     Series $ Stream (a0 * b0) $ coefficients (a0 *: Series b' + Series a' * Series (Stream b0 b'))
-  
   abs (Series s) = Series $ fmap abs s
   signum (Series s) = Series $ Stream (signum (head' s)) zeros
     where head' (Stream val _) = val
 
-instance (Fractional a) => Fractional (Series a) where
-  -- fromRational r = r + 0x + 0x^2 + ...
+instance Fractional a => Fractional (Series a) where
   fromRational r = Series $ Stream (fromRational r) zeros
-  
-  -- Division of series
-  -- If A = a₀ + xA' and B = b₀ + xB', then A/B = a₀/b₀ + x((A' - (a₀/b₀)B')/B)
   Series (Stream a0 a') / Series (Stream b0 b') =
     Series $ Stream q $ coefficients ((Series a' - q *: Series b') / Series (Stream b0 b'))
     where q = a0 / b0
@@ -108,7 +95,7 @@ instance (Fractional a) => Fractional (Series a) where
 -- [2,3,0,0,0,0,0,0,0,0]
 --
 gen :: Series (Ratio Integer) -> Stream Integer
-gen (Series s) = fmap (\r -> numerator r `div` denominator r) s
+gen (Series s) = fmap numerator s
 
 -- | Returns infinite stream of ones
 --
@@ -139,4 +126,3 @@ nats = gen (1 / ((1 - x) ^ (2 :: Int) :: Series (Ratio Integer)))
 --
 fibs :: Stream Integer
 fibs = gen (x / (1 - x - x^(2 :: Int) :: Series (Ratio Integer)))
-
